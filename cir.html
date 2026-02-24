@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Circuito en Serie y Paralelo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --teal:    #00d4d8;
+      --cyan:    #00f5ff;
+      --blue:    #0a4bff;
+      --orange:  #ff6b1a;
+      --amber:   #ffbe00;
+      --warm:    #ff4e1a;
+      --dark:    #050c1a;
+      --darker:  #020710;
+      --glass:   rgba(0,212,216,0.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--darker);
+      color: #e0f7fa;
+      min-height: 100vh;
+      padding: 2rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Canvas background */
+    #bgCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .btn-back {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;   /* tamaño fijo */
+  width: 220px;      /* ancho fijo */
+  padding: 10px 20px;
+  color: var(--cyan);
+  background: rgba(0,212,216,.08);
+  border: 1px solid rgba(0,212,216,.3);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all .3s ease;
+}
+    .btn-back:hover {
+      background: rgba(0,212,216,.15);
+      border-color: var(--cyan);
+      transform: translateX(-5px);
+      box-shadow: 0 4px 20px rgba(0,212,216,.3);
+    }
+
+    .btn-back svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      transition: transform .3s ease;
+    }
+
+    .btn-back:hover svg {
+      transform: translateX(-3px);
+    }
+
+    /* Card container */
+    .card-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding-top: 5rem;
+    }
+
+    /* Card header */
+    .card-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .card-badge {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: .15em;
+      color: var(--orange);
+      border: 1px solid var(--orange);
+      padding: .35rem 1rem;
+      border-radius: 2px;
+      margin-bottom: 1.2rem;
+      background: rgba(255,107,26,.08);
+    }
+
+    .card-header h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--teal) 30%, var(--amber) 65%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 18px rgba(0,212,216,.5));
+      margin-bottom: 1rem;
+    }
+
+    .card-subtitle {
+      font-size: 1.15rem;
+      color: rgba(224,247,250,.65);
+      letter-spacing: .05em;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Circuits grid */
+    .circuits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 2.5rem;
+      margin-top: 2rem;
+    }
+
+    /* Circuit card */
+    .circuit-card {
+      background: linear-gradient(145deg, rgba(5,12,26,.85), rgba(2,7,16,.90));
+      border: 1px solid rgba(0,212,216,.25);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      transition: all .4s ease;
+      box-shadow: 
+        0 8px 32px rgba(0,0,0,.5),
+        inset 0 1px 0 rgba(0,245,255,.08);
+    }
+
+    .circuit-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(135deg, rgba(0,212,216,.15), transparent 50%, rgba(255,107,26,.12));
+      border-radius: 16px;
+      opacity: 0;
+      transition: opacity .4s ease;
+      z-index: -1;
+    }
+
+    .circuit-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(0,245,255,.5);
+      box-shadow: 
+        0 16px 48px rgba(0,212,216,.25),
+        0 0 32px rgba(255,107,26,.15),
+        inset 0 1px 0 rgba(0,245,255,.15);
+    }
+
+    .circuit-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Circuit header */
+    .circuit-header {
+      padding: 2rem 2rem 1.5rem;
+      border-bottom: 1px solid rgba(0,212,216,.15);
+    }
+
+    .circuit-type {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .7rem;
+      letter-spacing: .18em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: .8rem;
+    }
+
+    .circuit-title {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.8rem, 3vw, 2.2rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--cyan), var(--teal) 40%, var(--amber));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 12px rgba(0,212,216,.4));
+      margin-bottom: 1rem;
+    }
+
+    .circuit-intro {
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: rgba(224,247,250,.75);
+    }
+
+    /* Image section */
+    .circuit-images {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1.5rem;
+      background: rgba(0,212,216,.03);
+    }
+
+    .image-wrapper {
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid rgba(0,212,216,.2);
+      transition: all .3s ease;
+      background: rgba(2,7,16,.6);
+    }
+
+    .image-wrapper:hover {
+      transform: scale(1.02);
+      border-color: var(--cyan);
+      box-shadow: 0 8px 24px rgba(0,212,216,.3);
+    }
+
+    .image-wrapper img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .image-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.9), transparent);
+      padding: 1rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: .1em;
+      color: var(--cyan);
+      text-transform: uppercase;
+    }
+
+    /* Content section */
+    .circuit-content {
+      padding: 2rem;
+    }
+
+    .content-section {
+      margin-bottom: 2rem;
+    }
+
+    .content-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--cyan);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .section-icon {
+      font-size: 1.3rem;
+    }
+
+    .section-text {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: rgba(224,247,250,.8);
+      margin-bottom: 1rem;
+    }
+
+    .info-box {
+      background: rgba(0,212,216,.04);
+      border: 1px solid rgba(0,212,216,.2);
+      border-left: 4px solid var(--cyan);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin-top: 1rem;
+    }
+
+    .info-box-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .8rem;
+      letter-spacing: .1em;
+      color: var(--orange);
+      text-transform: uppercase;
+      margin-bottom: .8rem;
+    }
+
+    .info-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .info-list li {
+      font-size: .95rem;
+      color: rgba(224,247,250,.75);
+      padding-left: 1.5rem;
+      position: relative;
+      margin-bottom: .6rem;
+      line-height: 1.6;
+    }
+
+    .info-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--amber);
+      font-weight: bold;
+    }
+
+    /* Comparison table */
+    .comparison-section {
+      margin-top: 3rem;
+      padding: 2rem;
+      background: linear-gradient(145deg, rgba(5,12,26,.85), rgba(2,7,16,.90));
+      border: 1px solid rgba(0,212,216,.25);
+      border-radius: 16px;
+    }
+
+    .comparison-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-align: center;
+      background: linear-gradient(135deg, var(--cyan), var(--amber));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 2rem;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    .comparison-item {
+      background: rgba(0,212,216,.04);
+      border: 1px solid rgba(0,212,216,.15);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all .3s ease;
+    }
+
+    .comparison-item:hover {
+      background: rgba(0,212,216,.08);
+      border-color: rgba(0,245,255,.3);
+      transform: translateY(-4px);
+    }
+
+    .comparison-item h4 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.1rem;
+      color: var(--cyan);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .circuits-grid {
+        grid-template-columns: 1fr;
+      }
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .btn-back {
+        top: 1rem;
+        left: 1rem;
+        padding: .6rem 1.2rem;
+        font-size: .75rem;
+      }
+      .card-container { padding-top: 4rem; }
+      .circuits-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      .circuit-images {
+        grid-template-columns: 1fr;
+      }
+      .image-wrapper img {
+        height: 200px;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .circuits-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<!-- Botón de regreso -->
+<a href="../index.html" class="btn-back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+  </svg>
+  VOLVER AL PORTAFOLIO
+</a>
+
+<div class="card-container">
+  
+  <!-- Header -->
+  <div class="card-header">
+    <span class="card-badge">CIRCUITOS ELÉCTRICOS</span>
+    <h1>Circuitos en Serie<br>y Paralelo</h1>
+    <p class="card-subtitle">Comprende las diferencias fundamentales entre circuitos en serie y paralelo, sus características, aplicaciones y cómo implementarlos con Arduino.</p>
+  </div>
+
+  <!-- Circuits Grid -->
+  <div class="circuits-grid">
+
+    <!-- CIRCUITO EN SERIE -->
+    <div class="circuit-card">
+      <div class="circuit-header">
+        <p class="circuit-type">Tipo 01 — Conexión Lineal</p>
+        <h2 class="circuit-title">Circuito en Serie</h2>
+        <p class="circuit-intro">
+          Los componentes están conectados uno tras otro en una sola ruta, formando una cadena donde la corriente fluye a través de cada elemento secuencialmente.
+        </p>
+      </div>
+
+      <div class="circuit-images">
+        <div class="image-wrapper">
+          <img src="serie.jpeg" alt="Diagrama circuito en serie">
+          <div class="image-label">Diagrama Esquemático</div>
+        </div>
+        <div class="image-wrapper">
+          <img src="serie2.jpeg" alt="Circuito en serie real">
+          <div class="image-label">Implementación Real</div>
+        </div>
+      </div>
+
+      <div class="circuit-content">
+        
+        <div class="content-section">
+          <h3 class="section-title">
+            <span class="section-icon">⚡</span>
+            Características Principales
+          </h3>
+          <p class="section-text">
+            En un circuito en serie, todos los componentes comparten la misma corriente eléctrica. Si uno de los elementos falla o se desconecta, todo el circuito deja de funcionar, ya que la corriente no tiene una ruta alternativa.
+          </p>
+          <div class="info-box">
+            <p class="info-box-title">Propiedades Eléctricas:</p>
+            <ul class="info-list">
+              <li><strong>Corriente (I):</strong> Es la misma en todos los componentes</li>
+              <li><strong>Voltaje (V):</strong> Se divide entre los componentes (V_total = V1 + V2 + V3...)</li>
+              <li><strong>Resistencia Total:</strong> R_total = R1 + R2 + R3... (suma de resistencias)</li>
+              <li><strong>Si un componente falla:</strong> Todo el circuito se interrumpe</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h3 class="section-title">
+            <span class="section-icon">💡</span>
+            Aplicaciones Prácticas
+          </h3>
+          <p class="section-text">
+            Los circuitos en serie son útiles cuando necesitas que todos los componentes funcionen simultáneamente o cuando quieres controlar múltiples elementos con un solo interruptor.
+          </p>
+          <div class="info-box">
+            <p class="info-box-title">Ejemplos de Uso:</p>
+            <ul class="info-list">
+              <li>Luces navideñas tradicionales (una se apaga, todas se apagan)</li>
+              <li>Sistemas de seguridad con múltiples sensores</li>
+              <li>LEDs indicadores que deben apagarse juntos</li>
+              <li>Divisores de voltaje para sensores analógicos</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CIRCUITO EN PARALELO -->
+    <div class="circuit-card">
+      <div class="circuit-header">
+        <p class="circuit-type">Tipo 02 — Conexión Múltiple</p>
+        <h2 class="circuit-title">Circuito en Paralelo</h2>
+        <p class="circuit-intro">
+          Los componentes están conectados en ramificaciones independientes, donde cada elemento tiene su propia ruta desde la fuente de alimentación.
+        </p>
+      </div>
+
+      <div class="circuit-images">
+        <div class="image-wrapper">
+          <img src="paralelo.jpeg" alt="Diagrama circuito en paralelo">
+          <div class="image-label">Diagrama Esquemático</div>
+        </div>
+        <div class="image-wrapper">
+          <img src="paralelo2.jpeg" alt="Circuito en paralelo real">
+          <div class="image-label">Implementación Real</div>
+        </div>
+      </div>
+
+      <div class="circuit-content">
+        
+        <div class="content-section">
+          <h3 class="section-title">
+            <span class="section-icon">⚡</span>
+            Características Principales
+          </h3>
+          <p class="section-text">
+            En un circuito en paralelo, cada componente recibe el mismo voltaje de la fuente, pero la corriente se divide entre las diferentes ramas. Si un componente falla, los demás continúan funcionando normalmente.
+          </p>
+          <div class="info-box">
+            <p class="info-box-title">Propiedades Eléctricas:</p>
+            <ul class="info-list">
+              <li><strong>Voltaje (V):</strong> Es el mismo en todos los componentes</li>
+              <li><strong>Corriente (I):</strong> Se divide entre las ramas (I_total = I1 + I2 + I3...)</li>
+              <li><strong>Resistencia Total:</strong> 1/R_total = 1/R1 + 1/R2 + 1/R3... (inversa de la suma)</li>
+              <li><strong>Si un componente falla:</strong> Los demás continúan funcionando</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h3 class="section-title">
+            <span class="section-icon">💡</span>
+            Aplicaciones Prácticas
+          </h3>
+          <p class="section-text">
+            Los circuitos en paralelo son ideales cuando necesitas que los componentes funcionen de manera independiente y cada uno requiera el voltaje completo de la fuente.
+          </p>
+          <div class="info-box">
+            <p class="info-box-title">Ejemplos de Uso:</p>
+            <ul class="info-list">
+              <li>Sistema eléctrico residencial (enchufes y luces independientes)</li>
+              <li>Múltiples LEDs con control individual</li>
+              <li>Sensores que deben operar simultáneamente pero independientemente</li>
+              <li>Baterías en paralelo para aumentar capacidad (mAh)</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /circuits-grid -->
+
+  <!-- Comparison Section -->
+  <div class="comparison-section">
+    <h3 class="comparison-title">Comparativa Directa</h3>
+    
+    <div class="comparison-grid">
+      
+      <div class="comparison-item">
+        <h4>🔴 Circuito en Serie</h4>
+        <div class="info-box">
+          <p class="info-box-title">Ventajas:</p>
+          <ul class="info-list">
+            <li>Diseño simple y económico</li>
+            <li>Menor consumo de cables</li>
+            <li>Control centralizado de todos los componentes</li>
+            <li>Útil para divisores de voltaje</li>
+          </ul>
+        </div>
+        <div class="info-box" style="margin-top: 1rem;">
+          <p class="info-box-title">Desventajas:</p>
+          <ul class="info-list">
+            <li>Si un componente falla, todo deja de funcionar</li>
+            <li>El voltaje se divide entre componentes</li>
+            <li>No se pueden controlar componentes individualmente</li>
+            <li>Agregar más componentes reduce el voltaje disponible</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="comparison-item">
+        <h4>🟢 Circuito en Paralelo</h4>
+        <div class="info-box">
+          <p class="info-box-title">Ventajas:</p>
+          <ul class="info-list">
+            <li>Los componentes funcionan independientemente</li>
+            <li>Cada componente recibe voltaje completo</li>
+            <li>Fallo de un componente no afecta a los demás</li>
+            <li>Permite control individual de cada elemento</li>
+          </ul>
+        </div>
+        <div class="info-box" style="margin-top: 1rem;">
+          <p class="info-box-title">Desventajas:</p>
+          <ul class="info-list">
+            <li>Mayor consumo de cables y materiales</li>
+            <li>La corriente total es mayor (mayor consumo)</li>
+            <li>Requiere fuente de alimentación más potente</li>
+            <li>Diseño más complejo en el cableado</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="info-box" style="margin-top: 2rem;">
+      <p class="info-box-title">🎯 Recomendación para Arduino:</p>
+      <ul class="info-list">
+        <li><strong>Usa Serie cuando:</strong> Necesites ahorrar pines, controlar varios LEDs con un solo pin, o crear divisores de voltaje para sensores</li>
+        <li><strong>Usa Paralelo cuando:</strong> Cada componente necesite funcionar independientemente, requieras control individual, o el fallo de uno no deba afectar a los demás</li>
+        <li><strong>Consideración importante:</strong> Arduino UNO proporciona 5V en sus pines. Calcula siempre las resistencias necesarias para no dañar los componentes</li>
+      </ul>
+    </div>
+
+  </div>
+
+</div><!-- /card-container -->
+
+<!-- Scripts -->
+<script>
+  /* Animated particles on canvas */
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['rgba(0,212,216,', 'rgba(255,107,26,', 'rgba(255,190,0,', 'rgba(0,245,255,'];
+
+  function mkParticle() {
+    const c = COLORS[Math.floor(Math.random() * COLORS.length)];
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + .4,
+      vx: (Math.random() - .5) * .4,
+      vy: (Math.random() - .5) * .4,
+      alpha: Math.random() * .6 + .2,
+      color: c,
+      pulse: Math.random() * Math.PI * 2
+    };
+  }
+  for (let i = 0; i < 90; i++) particles.push(mkParticle());
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach((p, i) => {
+      p.pulse += .02;
+      const a = p.alpha * (.7 + .3 * Math.sin(p.pulse));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + a + ')';
+      ctx.fill();
+
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+
+      /* Draw lines to nearby particles */
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dx = p.x - q.x, dy = p.y - q.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 90) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = p.color + ((.18 - dist/500) * a) + ')';
+          ctx.lineWidth = .5;
+          ctx.stroke();
+        }
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+
+</body>
+</html>

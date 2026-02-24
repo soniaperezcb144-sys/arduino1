@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LED con Potenciómetro — Proyecto Arduino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --teal:   #00d4d8;
+      --cyan:   #00f5ff;
+      --orange: #ff6b1a;
+      --amber:  #ffbe00;
+      --dark:   #050c1a;
+      --darker: #020710;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--darker);
+      color: #e0f7fa;
+      overflow-x: hidden;
+    }
+
+    #bgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── BACK BUTTON ── */
+    .btn-back {
+      position: fixed;
+      top: 1.5rem; left: 1.5rem;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .78rem;
+      letter-spacing: .1em;
+      color: var(--cyan);
+      background: rgba(0,212,216,.08);
+      border: 1px solid rgba(0,212,216,.3);
+      padding: .65rem 1.2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all .3s;
+      backdrop-filter: blur(12px);
+    }
+    .btn-back:hover {
+      background: rgba(0,212,216,.16);
+      border-color: var(--cyan);
+      transform: translateX(-4px);
+      box-shadow: 0 0 20px rgba(0,212,216,.25);
+    }
+    .btn-back svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 7rem 2rem 4rem;
+    }
+
+    .hero-badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: .2em;
+      color: var(--orange);
+      border: 1px solid rgba(255,107,26,.4);
+      padding: .35rem 1rem;
+      border-radius: 2px;
+      background: rgba(255,107,26,.07);
+      margin-bottom: 1.5rem;
+      display: inline-block;
+    }
+
+    .hero h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2.4rem, 7vw, 5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--teal) 30%, var(--amber) 65%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 22px rgba(0,212,216,.5));
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-desc {
+      font-size: 1.2rem;
+      line-height: 1.7;
+      color: rgba(224,247,250,.72);
+      max-width: 680px;
+      margin-bottom: 2rem;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      justify-content: center;
+      margin-bottom: 3rem;
+    }
+    .tag {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .7rem;
+      letter-spacing: .08em;
+      color: var(--teal);
+      background: rgba(0,212,216,.08);
+      border: 1px solid rgba(0,212,216,.25);
+      padding: .35rem .85rem;
+      border-radius: 4px;
+    }
+
+    .scroll-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .5rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .68rem;
+      letter-spacing: .14em;
+      color: rgba(0,212,216,.45);
+      animation: bounce 2s ease-in-out infinite;
+    }
+    .scroll-hint svg { width:22px; height:22px; stroke:rgba(0,212,216,.45); fill:none; stroke-width:2; }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
+
+    /* ── CONTENT WRAPPER ── */
+    .content {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem 6rem;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .7rem;
+      letter-spacing: .2em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: .6rem;
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, rgba(255,190,0,.3), transparent);
+    }
+
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      color: var(--cyan);
+      filter: drop-shadow(0 0 10px rgba(0,212,216,.35));
+      margin-bottom: 1rem;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(0,212,216,.3), transparent);
+      margin: 4rem 0;
+    }
+
+    /* ── VIDEO SECTION ── */
+    .video-section {
+      margin-bottom: 4rem;
+    }
+
+    .video-frame {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px dashed rgba(0,212,216,.3);
+      background: rgba(0,212,216,.03);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.4rem;
+      position: relative;
+      transition: border-color .3s;
+    }
+    .video-frame:hover { border-color: rgba(0,212,216,.5); }
+
+    /* Scan line */
+    .video-frame::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--teal), transparent);
+      animation: scan 3s linear infinite;
+      opacity: .45;
+    }
+    @keyframes scan { 0%{top:0%} 100%{top:100%} }
+
+    .vf-icon {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(0,212,216,.07);
+      border: 2px solid rgba(0,212,216,.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative; z-index: 1;
+    }
+    .vf-icon svg { width:36px; height:36px; fill:var(--cyan); opacity:.6; margin-left:5px; }
+
+    .vf-text {
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .vf-text strong {
+      display: block;
+      font-family: 'Orbitron', monospace;
+      font-size: 1.1rem;
+      color: rgba(0,212,216,.8);
+      margin-bottom: .4rem;
+    }
+    .vf-text span {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .8rem;
+      color: rgba(0,212,216,.45);
+      letter-spacing: .1em;
+    }
+
+    .vf-corner {
+      position: absolute;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .6rem;
+      letter-spacing: .08em;
+      color: rgba(0,212,216,.25);
+    }
+    .vf-corner.tl { top:1rem; left:1rem; }
+    .vf-corner.br { bottom:1rem; right:1rem; }
+
+    /* ── IMAGES SECTION ── */
+    .images-section { margin-bottom: 4rem; }
+
+    .img-card {
+      background: linear-gradient(145deg, rgba(5,12,26,.9), rgba(2,7,16,.95));
+      border: 1px solid rgba(0,212,216,.2);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all .35s ease;
+      margin-bottom: 2rem;
+    }
+    .img-card:hover {
+      border-color: rgba(0,212,216,.45);
+      box-shadow: 0 12px 40px rgba(0,212,216,.2);
+      transform: translateY(-4px);
+    }
+
+    .img-card-top {
+      position: relative;
+      overflow: hidden;
+    }
+    .img-card-top img {
+      width: 100%;
+      height: 420px;
+      object-fit: cover;
+      display: block;
+      transition: transform .5s ease;
+    }
+    .img-card:hover .img-card-top img { transform: scale(1.03); }
+
+    .img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, rgba(2,7,16,.95) 100%);
+    }
+
+    .img-num-badge {
+      position: absolute;
+      top: 1rem; left: 1rem;
+      font-family: 'Orbitron', monospace;
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--amber);
+      background: rgba(2,7,16,.85);
+      border: 1px solid rgba(255,190,0,.35);
+      padding: .3rem .7rem;
+      border-radius: 4px;
+      backdrop-filter: blur(8px);
+    }
+
+    .img-card-body {
+      padding: 1.6rem 2rem 2rem;
+    }
+
+    .img-card-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.1rem;
+      color: var(--cyan);
+      margin-bottom: .7rem;
+    }
+
+    .img-card-text {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: rgba(224,247,250,.75);
+    }
+
+    /* Two column grid for images 2 & 3 */
+    .img-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .img-pair .img-card {
+      margin-bottom: 0;
+    }
+
+    .img-pair .img-card-top img {
+      height: 300px;
+    }
+
+    /* ── INFO BOXES ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .info-box {
+      background: rgba(0,212,216,.04);
+      border: 1px solid rgba(0,212,216,.2);
+      border-left: 4px solid var(--cyan);
+      border-radius: 10px;
+      padding: 1.4rem;
+    }
+
+    .info-box.orange { border-left-color: var(--orange); }
+    .info-box.amber  { border-left-color: var(--amber);  }
+
+    .info-box-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: .12em;
+      color: var(--orange);
+      text-transform: uppercase;
+      margin-bottom: .9rem;
+    }
+
+    .info-list { list-style: none; }
+    .info-list li {
+      font-size: .95rem;
+      color: rgba(224,247,250,.75);
+      padding-left: 1.4rem;
+      position: relative;
+      margin-bottom: .55rem;
+      line-height: 1.6;
+    }
+    .info-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--amber);
+    }
+
+    /* ── CODE BLOCK ── */
+    .code-section { margin-bottom: 4rem; }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,212,216,.06);
+      border: 1px solid rgba(0,212,216,.2);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      padding: .9rem 1.4rem;
+    }
+
+    .code-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .78rem;
+      letter-spacing: .1em;
+      color: var(--amber);
+    }
+
+    .code-dots { display:flex; gap:.5rem; }
+    .code-dots span {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+    }
+    .code-dots span:nth-child(1){ background:#ff5f57; }
+    .code-dots span:nth-child(2){ background:#febc2e; }
+    .code-dots span:nth-child(3){ background:#28c840; }
+
+    pre {
+      background: rgba(2,7,16,.9);
+      border: 1px solid rgba(0,212,216,.2);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 2rem;
+      overflow-x: auto;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .88rem;
+      line-height: 1.8;
+      color: #e0f7fa;
+    }
+
+    .c-comment { color: rgba(0,212,216,.5); }
+    .c-keyword  { color: var(--cyan); }
+    .c-func     { color: var(--amber); }
+    .c-num      { color: var(--orange); }
+    .c-var      { color: #a8edea; }
+
+    /* ── COMPONENTS TABLE ── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(0,212,216,.2);
+      margin-top: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .95rem;
+    }
+
+    thead tr {
+      background: rgba(0,212,216,.08);
+      border-bottom: 1px solid rgba(0,212,216,.25);
+    }
+
+    th {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: .12em;
+      color: var(--cyan);
+      text-transform: uppercase;
+      padding: 1rem 1.5rem;
+      text-align: left;
+    }
+
+    td {
+      padding: .9rem 1.5rem;
+      color: rgba(224,247,250,.8);
+      border-bottom: 1px solid rgba(0,212,216,.08);
+      line-height: 1.5;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(0,212,216,.04); }
+
+    td:first-child { color: var(--amber); font-family: 'Share Tech Mono', monospace; font-size: .85rem; }
+
+    /* ── FORMULA BOX ── */
+    .formula-box {
+      background: rgba(0,212,216,.04);
+      border: 1px solid rgba(0,212,216,.2);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .formula {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      color: var(--cyan);
+      filter: drop-shadow(0 0 8px rgba(0,212,216,.5));
+      margin-bottom: .8rem;
+    }
+
+    .formula-note {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .8rem;
+      color: rgba(0,212,216,.55);
+      letter-spacing: .08em;
+    }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 3rem 2rem;
+      border-top: 1px solid rgba(0,212,216,.1);
+    }
+    .page-footer p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: .12em;
+      color: rgba(0,212,216,.35);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      .img-pair { grid-template-columns: 1fr; }
+      .img-pair .img-card-top img { height: 220px; }
+      .img-card-top img { height: 260px; }
+      pre { font-size: .78rem; padding: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<a href="../index.html" class="btn-back">
+  <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"/>
+    <polyline points="12 19 5 12 12 5"/>
+  </svg>
+  VOLVER
+</a>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <span class="hero-badge">// 04 — CONTROL ANALÓGICO</span>
+  <h1>LED con<br>Potenciómetro</h1>
+  <p class="hero-desc">
+    Control de la intensidad luminosa de un LED mediante un potenciómetro.
+    Se utiliza la entrada analógica de Arduino para leer el valor del
+    potenciómetro y ajustar el brillo del LED con señal PWM.
+  </p>
+  <div class="tags">
+    <span class="tag">analogRead()</span>
+    <span class="tag">analogWrite()</span>
+    <span class="tag">PWM</span>
+    <span class="tag">Potenciómetro 10kΩ</span>
+    <span class="tag">LED</span>
+    <span class="tag">map()</span>
+    <span class="tag">Arduino UNO</span>
+  </div>
+  <div class="scroll-hint">
+    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <polyline points="19 12 12 19 5 12"/>
+    </svg>
+    DESPLÁZATE PARA VER MÁS
+  </div>
+</section>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div class="content">
+
+  <!-- VIDEO 1 -->
+<section class="video-section">
+  <p class="section-label">01 — DEMOSTRACIÓN</p>
+  <h2 class="section-title">Circuito con Batería 9V y Potenciómetro</h2>
+
+  <video src="potenciometro.mp4" controls style="width:100%; border-radius:16px;"></video>
+</section>
+
+
+<!-- VIDEO 2 -->
+<section class="video-section">
+  <p class="section-label">01B — DEMOSTRACIÓN 2</p>
+  <h2 class="section-title">LEDs en Paralelo con Arduino UNO</h2>
+
+  <video src="AQUI_TU_SEGUNDO_VIDEO.mp4" controls style="width:100%; border-radius:16px;"></video>
+</section>
+
+
+<!-- VIDEO 3 -->
+<section class="video-section">
+  <p class="section-label">01C — DEMOSTRACIÓN 3</p>
+  <h2 class="section-title">Comparativa Serie vs Paralelo</h2>
+
+  <video src="boton.mp4" controls style="width:100%; border-radius:16px;"></video>
+</section>
+
+  <div class="divider"></div>
+
+  <!-- EXPLICACIÓN -->
+  <section style="margin-bottom:3rem;">
+    <p class="section-label">02 — CONCEPTO</p>
+    <h2 class="section-title">¿Cómo Funciona?</h2>
+    <p style="font-size:1.05rem;line-height:1.85;color:rgba(224,247,250,.78);max-width:800px;margin-bottom:2rem;">
+      Un potenciómetro es una resistencia variable de 3 terminales. Al girar su eje,
+      cambia la tensión que entrega al pin analógico del Arduino (entre 0V y 5V).
+      Arduino convierte ese voltaje en un valor digital de 0 a 1023 con
+      <strong style="color:var(--cyan);">analogRead()</strong>. Luego, con la función
+      <strong style="color:var(--cyan);">map()</strong> se escala ese rango a 0–255,
+      y finalmente <strong style="color:var(--cyan);">analogWrite()</strong> genera una
+      señal PWM en el pin del LED para controlar su brillo.
+    </p>
+
+    <div class="info-grid">
+      <div class="info-box">
+        <p class="info-box-title">Señal PWM</p>
+        <ul class="info-list">
+          <li>Pulsos de encendido/apagado a alta frecuencia (~490 Hz)</li>
+          <li>Duty cycle del 0% = LED apagado</li>
+          <li>Duty cycle del 100% = LED al máximo</li>
+          <li>Pines PWM en Arduino: 3, 5, 6, 9, 10, 11</li>
+        </ul>
+      </div>
+      <div class="info-box orange">
+        <p class="info-box-title">Potenciómetro 10kΩ</p>
+        <ul class="info-list">
+          <li>Terminal izquierdo → 5V (VCC)</li>
+          <li>Terminal derecho → GND</li>
+          <li>Terminal central (wiper) → Pin A0</li>
+          <li>Divide el voltaje proporcionalmente al giro</li>
+        </ul>
+      </div>
+      <div class="info-box amber">
+        <p class="info-box-title">Función map()</p>
+        <ul class="info-list">
+          <li>Convierte un rango numérico en otro</li>
+          <li>Entrada: 0–1023 (analogRead)</li>
+          <li>Salida: 0–255 (analogWrite / PWM)</li>
+          <li>Sintaxis: map(valor, 0, 1023, 0, 255)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- IMAGEN 1 — CIRCUITO PARALELO ARDUINO -->
+  <section class="images-section">
+    <p class="section-label">03 — CIRCUITOS</p>
+    <h2 class="section-title">Diagramas e Implementaciones</h2>
+
+    <div class="img-card">
+      <div class="img-card-top">
+        <img src="potenciometro2.jpeg" alt="Implementación real con batería 9V y potenciómetro">
+        <div class="img-overlay"></div>
+        <span class="img-num-badge">IMG 01</span>
+      </div>
+      <div class="img-card-body">
+        <h3 class="img-card-title">Circuito con Batería 9V y Potenciómetro</h3>
+        <p class="img-card-text">
+          En esta implementación se utiliza una batería de 9V como fuente de alimentación independiente.
+          El potenciómetro azul de 10kΩ actúa como divisor de voltaje: su terminal central entrega
+          un voltaje variable que controla la corriente que fluye a través de la resistencia de
+          protección y el LED rojo. Al girar el potenciómetro, la tensión cambia y con ella el
+          brillo del LED. La resistencia en serie (color marrón/negro) protege al LED de sobrecorriente.
+          Este esquema es ideal para entender el control analógico antes de integrar Arduino.
+        </p>
+      </div>
+    </div>
+
+    <!-- Par de imágenes -->
+    <div class="img-pair">
+      <div class="img-card">
+        <div class="img-card-top">
+          <img src="arduino.jpeg" alt="Circuito en paralelo con LEDs y Arduino UNO">
+          <div class="img-overlay"></div>
+          <span class="img-num-badge">IMG 02</span>
+        </div>
+        <div class="img-card-body">
+          <h3 class="img-card-title">LEDs en Paralelo con Arduino UNO</h3>
+          <p class="img-card-text">
+            Tres LEDs rojos conectados en paralelo a diferentes pines digitales del Arduino UNO.
+            Cada LED tiene su propia resistencia limitadora de corriente. Esta configuración permite
+            controlar cada LED de forma independiente, lo que es la base para aplicar PWM individual
+            a cada uno. Los cables negros retornan al GND común del Arduino.
+          </p>
+        </div>
+      </div>
+
+      <div class="img-card">
+        <div class="img-card-top">
+          <img src="boton2.jpeg" alt="Diagrama doble con batería 9V en serie y paralelo">
+          <div class="img-overlay"></div>
+          <span class="img-num-badge">IMG 03</span>
+        </div>
+        <div class="img-card-body">
+          <h3 class="img-card-title">Comparativa Serie vs Paralelo</h3>
+          <p class="img-card-text">
+            Diagrama comparativo entre circuito en serie (arriba) y en paralelo (abajo), ambos
+            alimentados con baterías de 9V. En el circuito superior se observan tres LEDs y
+            resistencias en una sola cadena, mientras que el inferior muestra una configuración
+            compacta con los componentes en ramas independientes. Esta comparación visual
+            refuerza las diferencias de voltaje y corriente entre ambas topologías.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- COMPONENTES -->
+  <section style="margin-bottom:3rem;">
+    <p class="section-label">04 — MATERIALES</p>
+    <h2 class="section-title">Lista de Componentes</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th>Valor / Modelo</th>
+            <th>Cantidad</th>
+            <th>Función</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Arduino UNO</td>
+            <td>ATmega328P — 5V</td>
+            <td>1</td>
+            <td>Microcontrolador principal, genera señal PWM</td>
+          </tr>
+          <tr>
+            <td>Potenciómetro</td>
+            <td>10kΩ lineal</td>
+            <td>1</td>
+            <td>Divisor de voltaje analógico (0–5V)</td>
+          </tr>
+          <tr>
+            <td>LED</td>
+            <td>Rojo, 5mm — Vf 2V, 20mA</td>
+            <td>1</td>
+            <td>Indicador luminoso cuyo brillo se controla</td>
+          </tr>
+          <tr>
+            <td>Resistencia</td>
+            <td>220Ω — ¼W</td>
+            <td>1</td>
+            <td>Protección de corriente para el LED</td>
+          </tr>
+          <tr>
+            <td>Protoboard</td>
+            <td>830 puntos</td>
+            <td>1</td>
+            <td>Montaje y conexión sin soldadura</td>
+          </tr>
+          <tr>
+            <td>Cables Dupont</td>
+            <td>M-M / M-H</td>
+            <td>~6</td>
+            <td>Conexiones entre componentes y Arduino</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="formula-box" style="margin-top:2rem;">
+      <p class="formula">R = (Vcc − Vf) / If = (5V − 2V) / 0.02A = 150Ω → usar 220Ω</p>
+      <p class="formula-note">Cálculo de resistencia limitadora para LED rojo con Arduino 5V</p>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CÓDIGO -->
+  <section class="code-section">
+    <p class="section-label">05 — PROGRAMACIÓN</p>
+    <h2 class="section-title">Código Arduino</h2>
+
+    <p style="font-size:1rem;line-height:1.75;color:rgba(224,247,250,.72);margin-bottom:1.5rem;max-width:700px;">
+      El sketch lee el valor analógico del potenciómetro en el pin A0, lo mapea al
+      rango PWM (0–255) y escribe ese valor en el pin 9 para controlar el brillo del LED.
+    </p>
+
+    <div class="code-header">
+      <span class="code-title">circuito_leds.ino</span>
+      <div class="code-dots"><span></span><span></span><span></span></div>
+    </div>
+    <pre><code><span class="c-comment">// C++ code
+//</span>
+<span class="c-keyword">void</span> <span class="c-func">setup</span>()
+{
+  <span class="c-func">pinMode</span>(<span class="c-num">13</span>, OUTPUT);   <span class="c-comment">// LED 1</span>
+  <span class="c-func">pinMode</span>(<span class="c-num">12</span>, OUTPUT);   <span class="c-comment">// LED 2</span>
+  <span class="c-func">pinMode</span>(<span class="c-num">11</span>, OUTPUT);   <span class="c-comment">// LED 3</span>
+}
+
+<span class="c-keyword">void</span> <span class="c-func">loop</span>()
+{
+  <span class="c-comment">// Enciende los 3 LEDs</span>
+  <span class="c-func">digitalWrite</span>(<span class="c-num">13</span>, HIGH);
+  <span class="c-func">digitalWrite</span>(<span class="c-num">12</span>, HIGH);
+  <span class="c-func">digitalWrite</span>(<span class="c-num">11</span>, HIGH);
+  <span class="c-func">delay</span>(<span class="c-num">1000</span>);             <span class="c-comment">// Espera 1 segundo</span>
+
+  <span class="c-comment">// Apaga los 3 LEDs</span>
+  <span class="c-func">digitalWrite</span>(<span class="c-num">13</span>, LOW);
+  <span class="c-func">digitalWrite</span>(<span class="c-num">12</span>, LOW);
+  <span class="c-func">digitalWrite</span>(<span class="c-num">11</span>, LOW);
+  <span class="c-func">delay</span>(<span class="c-num">1000</span>);             <span class="c-comment">// Espera 1 segundo</span>
+}</code></pre>
+
+    <div class="info-grid" style="margin-top:1.5rem;">
+      <div class="info-box">
+        <p class="info-box-title">Pines Utilizados</p>
+        <ul class="info-list">
+          <li><strong>Pin 13</strong> — salida digital LED 1</li>
+          <li><strong>Pin 12</strong> — salida digital LED 2</li>
+          <li><strong>Pin 11</strong> — salida digital LED 3</li>
+          <li><strong>GND</strong> — tierra común del circuito</li>
+        </ul>
+      </div>
+      <div class="info-box orange">
+        <p class="info-box-title">Funciones Clave</p>
+        <ul class="info-list">
+          <li><strong>pinMode(pin, OUTPUT)</strong> — configura el pin como salida</li>
+          <li><strong>digitalWrite(pin, HIGH)</strong> — enciende el LED (5V)</li>
+          <li><strong>digitalWrite(pin, LOW)</strong> — apaga el LED (0V)</li>
+          <li><strong>delay(1000)</strong> — pausa de 1 segundo entre estados</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /content -->
+
+<footer class="page-footer">
+  <p>LED CON POTENCIÓMETRO — ARDUINO UNO — PROYECTO 04</p>
+</footer>
+
+<script>
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['rgba(0,212,216,','rgba(255,107,26,','rgba(255,190,0,','rgba(0,245,255,'];
+
+  function mkP() {
+    const c = COLORS[Math.floor(Math.random()*COLORS.length)];
+    return { x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.4+.3,
+      vx:(Math.random()-.5)*.35, vy:(Math.random()-.5)*.35,
+      alpha:Math.random()*.5+.15, color:c, pulse:Math.random()*Math.PI*2 };
+  }
+  for(let i=0;i<80;i++) particles.push(mkP());
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    particles.forEach((p,i)=>{
+      p.pulse+=.018;
+      const a=p.alpha*(.7+.3*Math.sin(p.pulse));
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.color+a+')'; ctx.fill();
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>W) p.vx*=-1;
+      if(p.y<0||p.y>H) p.vy*=-1;
+      for(let j=i+1;j<particles.length;j++){
+        const q=particles[j], dx=p.x-q.x, dy=p.y-q.y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<85){ ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
+          ctx.strokeStyle=p.color+((.15-d/570)*a)+')'; ctx.lineWidth=.4; ctx.stroke(); }
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+</body>
+</html>

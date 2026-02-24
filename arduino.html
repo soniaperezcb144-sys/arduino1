@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosario de Materiales de Arduino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --teal:    #00d4d8;
+      --cyan:    #00f5ff;
+      --blue:    #0a4bff;
+      --orange:  #ff6b1a;
+      --amber:   #ffbe00;
+      --warm:    #ff4e1a;
+      --dark:    #050c1a;
+      --darker:  #020710;
+      --glass:   rgba(0,212,216,0.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--darker);
+      color: #e0f7fa;
+      min-height: 100vh;
+      padding: 2rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Canvas background */
+    #bgCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Back button */
+    .btn-back {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .85rem;
+      letter-spacing: .08em;
+      color: var(--cyan);
+      background: rgba(0,212,216,.08);
+      border: 1px solid rgba(0,212,216,.3);
+      padding: .75rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all .3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-back:hover {
+      background: rgba(0,212,216,.15);
+      border-color: var(--cyan);
+      transform: translateX(-5px);
+      box-shadow: 0 4px 20px rgba(0,212,216,.3);
+    }
+
+    .btn-back svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      transition: transform .3s ease;
+    }
+
+    .btn-back:hover svg {
+      transform: translateX(-3px);
+    }
+
+    /* Card container */
+    .card-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding-top: 5rem;
+    }
+
+    /* Card header */
+    .card-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .card-badge {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: .15em;
+      color: var(--orange);
+      border: 1px solid var(--orange);
+      padding: .35rem 1rem;
+      border-radius: 2px;
+      margin-bottom: 1.2rem;
+      background: rgba(255,107,26,.08);
+    }
+
+    .card-header h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--teal) 30%, var(--amber) 65%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 18px rgba(0,212,216,.5));
+      margin-bottom: 1rem;
+    }
+
+    .card-subtitle {
+      font-size: 1.15rem;
+      color: rgba(224,247,250,.65);
+      letter-spacing: .05em;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Materials grid */
+    .materials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    /* Material card */
+    .material-card {
+      background: linear-gradient(145deg, rgba(5,12,26,.85), rgba(2,7,16,.90));
+      border: 1px solid rgba(0,212,216,.25);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      transition: all .4s ease;
+      box-shadow: 
+        0 8px 32px rgba(0,0,0,.5),
+        inset 0 1px 0 rgba(0,245,255,.08);
+    }
+
+    .material-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(135deg, rgba(0,212,216,.15), transparent 50%, rgba(255,107,26,.12));
+      border-radius: 16px;
+      opacity: 0;
+      transition: opacity .4s ease;
+      z-index: -1;
+    }
+
+    .material-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(0,245,255,.5);
+      box-shadow: 
+        0 16px 48px rgba(0,212,216,.25),
+        0 0 32px rgba(255,107,26,.15),
+        inset 0 1px 0 rgba(0,245,255,.15);
+    }
+
+    .material-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Material visual */
+    .material-visual {
+      position: relative;
+      width: 100%;
+      background: linear-gradient(160deg, rgba(0,75,255,.08) 0%, rgba(0,212,216,.06) 50%, rgba(255,107,26,.05) 100%);
+      padding: 2.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+    }
+
+    .material-visual svg {
+      width: 100%;
+      max-width: 180px;
+      height: auto;
+      filter: drop-shadow(0 0 15px rgba(0,212,216,.3));
+      transition: transform .3s ease;
+    }
+
+    .material-card:hover .material-visual svg {
+      transform: scale(1.05);
+    }
+
+    /* Material content */
+    .material-content {
+      padding: 1.8rem 1.8rem 2rem;
+    }
+
+    .material-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: .8rem;
+      text-align: center;
+    }
+
+    .material-category {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .7rem;
+      letter-spacing: .12em;
+      color: var(--amber);
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 1rem;
+      opacity: .8;
+    }
+
+    .material-description {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: rgba(224,247,250,.8);
+      margin-bottom: 1.2rem;
+    }
+
+    .material-specs {
+      background: rgba(0,212,216,.04);
+      border: 1px solid rgba(0,212,216,.15);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .spec-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: .1em;
+      color: var(--orange);
+      text-transform: uppercase;
+      margin-bottom: .6rem;
+    }
+
+    .spec-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .spec-list li {
+      font-size: .9rem;
+      color: rgba(224,247,250,.7);
+      padding-left: 1.2rem;
+      position: relative;
+      margin-bottom: .4rem;
+    }
+
+    .spec-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--cyan);
+      font-size: 1.2rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .btn-back {
+        top: 1rem;
+        left: 1rem;
+        padding: .6rem 1.2rem;
+        font-size: .75rem;
+      }
+      .card-container { padding-top: 4rem; }
+      .materials-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      .material-visual { padding: 2rem 1.5rem; min-height: 180px; }
+      .material-content { padding: 1.5rem; }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .materials-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<!-- Botón de regreso -->
+<a href="index.html" class="btn-back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+  </svg>
+  VOLVER AL PORTAFOLIO
+</a>
+
+<div class="card-container">
+  
+  <!-- Header -->
+  <div class="card-header">
+    <span class="card-badge">COMPONENTES ELECTRÓNICOS</span>
+    <h1>Glosario de Materiales<br>de Arduino</h1>
+    <p class="card-subtitle">Catálogo completo de componentes electrónicos esenciales para proyectos con Arduino, incluyendo especificaciones técnicas y aplicaciones prácticas.</p>
+  </div>
+
+  <!-- Materials Grid -->
+  <div class="materials-grid">
+
+    <!-- Arduino UNO -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow1">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect x="20" y="30" width="160" height="90" rx="6" fill="#006064" stroke="#00d4d8" stroke-width="2"/>
+          <rect x="80" y="50" width="40" height="30" rx="2" fill="#1a2332" stroke="#00f5ff" stroke-width="1.5" filter="url(#glow1)"/>
+          <text x="100" y="68" text-anchor="middle" font-family="monospace" font-size="6" fill="#00f5ff" font-weight="bold">ATmega328P</text>
+          <rect x="35" y="40" width="4" height="8" fill="#ff6b1a"/>
+          <rect x="42" y="40" width="4" height="8" fill="#ff6b1a"/>
+          <rect x="49" y="40" width="4" height="8" fill="#ff6b1a"/>
+          <rect x="140" y="40" width="4" height="8" fill="#ffbe00"/>
+          <rect x="147" y="40" width="4" height="8" fill="#ffbe00"/>
+          <rect x="154" y="40" width="4" height="8" fill="#ffbe00"/>
+          <rect x="30" y="95" width="20" height="15" rx="2" fill="#c0c0c0" stroke="#00d4d8" stroke-width="1"/>
+          <text x="40" y="105" text-anchor="middle" font-family="monospace" font-size="5" fill="#000">USB</text>
+          <circle cx="160" cy="105" r="4" fill="#ff6b1a" opacity="0.8"><animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/></circle>
+          <text x="100" y="130" text-anchor="middle" font-family="Orbitron" font-size="8" fill="#00f5ff" font-weight="bold">ARDUINO UNO</text>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Arduino UNO</h3>
+        <p class="material-category">Placa de Desarrollo</p>
+        <p class="material-description">
+          Placa de desarrollo basada en el microcontrolador ATmega328P. Es la más popular y versátil para principiantes y proyectos intermedios.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>14 pines digitales I/O</li>
+            <li>6 entradas analógicas</li>
+            <li>Voltaje de operación: 5V</li>
+            <li>Memoria Flash: 32KB</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- LED -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="ledGlow">
+              <stop offset="0%" style="stop-color:#ff6b1a;stop-opacity:0.8"/>
+              <stop offset="100%" style="stop-color:#ff6b1a;stop-opacity:0"/>
+            </radialGradient>
+            <filter id="glow2">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <circle cx="100" cy="60" r="25" fill="url(#ledGlow)" opacity="0.6">
+            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+          <ellipse cx="100" cy="55" rx="18" ry="20" fill="#ff6b1a" opacity="0.3"/>
+          <ellipse cx="100" cy="55" rx="14" ry="16" fill="#ff8c42" opacity="0.5"/>
+          <ellipse cx="100" cy="52" rx="10" ry="12" fill="#ffbe00" filter="url(#glow2)">
+            <animate attributeName="opacity" values="0.8;1;0.8" dur="1.5s" repeatCount="indefinite"/>
+          </ellipse>
+          <rect x="97" y="75" width="6" height="35" fill="#c0c0c0"/>
+          <rect x="95" y="110" width="3" height="15" fill="#888"/>
+          <rect x="102" y="110" width="3" height="15" fill="#888"/>
+          <text x="100" y="145" text-anchor="middle" font-family="monospace" font-size="7" fill="#888">(-) Cátodo</text>
+          <text x="100" y="15" text-anchor="middle" font-family="monospace" font-size="7" fill="#ff6b1a">(+) Ánodo</text>
+          <line x1="100" y1="20" x2="100" y2="35" stroke="#ff6b1a" stroke-width="2" marker-end="url(#arrowRed)"/>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">LED</h3>
+        <p class="material-category">Componente de Salida</p>
+        <p class="material-description">
+          Diodo Emisor de Luz. Componente semiconductor que emite luz cuando la corriente eléctrica pasa a través de él. Esencial para indicadores visuales.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>Voltaje típico: 2-3V</li>
+            <li>Corriente: 20mA (máx)</li>
+            <li>Requiere resistencia limitadora</li>
+            <li>Colores: Rojo, Verde, Azul, Amarillo</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resistencia -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <rect x="50" y="70" width="100" height="30" rx="15" fill="#d2b48c" stroke="#8b7355" stroke-width="2"/>
+          <rect x="60" y="70" width="8" height="30" fill="#ff6b1a"/>
+          <rect x="75" y="70" width="8" height="30" fill="#ffbe00"/>
+          <rect x="90" y="70" width="8" height="30" fill="#8b4513"/>
+          <rect x="105" y="70" width="12" height="30" fill="#ffd700"/>
+          <line x1="20" y1="85" x2="50" y2="85" stroke="#c0c0c0" stroke-width="4"/>
+          <line x1="150" y1="85" x2="180" y2="85" stroke="#c0c0c0" stroke-width="4"/>
+          <text x="100" y="130" text-anchor="middle" font-family="monospace" font-size="9" fill="#ff6b1a" font-weight="bold">220Ω</text>
+          <text x="100" y="50" text-anchor="middle" font-family="monospace" font-size="7" fill="#00d4d8">Código de colores</text>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Resistencia</h3>
+        <p class="material-category">Componente Pasivo</p>
+        <p class="material-description">
+          Limita el flujo de corriente eléctrica en un circuito. Esencial para proteger componentes como LEDs y controlar voltajes.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>Valores comunes: 220Ω, 1KΩ, 10KΩ</li>
+            <li>Potencia típica: 1/4W o 1/2W</li>
+            <li>Tolerancia: ±5% (dorada), ±10% (plateada)</li>
+            <li>Lectura por código de colores</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Protoboard -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <rect x="30" y="40" width="140" height="70" rx="3" fill="#f5f5dc" stroke="#8b7355" stroke-width="2"/>
+          <g opacity="0.3">
+            <line x1="40" y1="50" x2="40" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="50" y1="50" x2="50" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="60" y1="50" x2="60" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="70" y1="50" x2="70" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="80" y1="50" x2="80" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="90" y1="50" x2="90" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="100" y1="50" x2="100" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="110" y1="50" x2="110" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="120" y1="50" x2="120" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="130" y1="50" x2="130" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="140" y1="50" x2="140" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="150" y1="50" x2="150" y2="100" stroke="#666" stroke-width="1"/>
+            <line x1="160" y1="50" x2="160" y2="100" stroke="#666" stroke-width="1"/>
+          </g>
+          <circle cx="45" cy="60" r="2.5" fill="#888"/>
+          <circle cx="55" cy="60" r="2.5" fill="#888"/>
+          <circle cx="65" cy="60" r="2.5" fill="#888"/>
+          <circle cx="75" cy="60" r="2.5" fill="#888"/>
+          <circle cx="45" cy="75" r="2.5" fill="#888"/>
+          <circle cx="55" cy="75" r="2.5" fill="#888"/>
+          <circle cx="65" cy="75" r="2.5" fill="#888"/>
+          <circle cx="75" cy="75" r="2.5" fill="#888"/>
+          <circle cx="45" cy="90" r="2.5" fill="#888"/>
+          <circle cx="55" cy="90" r="2.5" fill="#888"/>
+          <circle cx="65" cy="90" r="2.5" fill="#888"/>
+          <circle cx="75" cy="90" r="2.5" fill="#888"/>
+          <line x1="35" y1="55" x2="165" y2="55" stroke="#ff0000" stroke-width="3" opacity="0.4"/>
+          <line x1="35" y1="95" x2="165" y2="95" stroke="#0000ff" stroke-width="3" opacity="0.4"/>
+          <text x="100" y="130" text-anchor="middle" font-family="monospace" font-size="8" fill="#00d4d8" font-weight="bold">BREADBOARD</text>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Protoboard</h3>
+        <p class="material-category">Base de Montaje</p>
+        <p class="material-description">
+          Placa de pruebas reutilizable para crear circuitos sin soldadura. Permite conexiones temporales mediante orificios conectados internamente.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>Tamaños: 400, 830, 1660 puntos</li>
+            <li>Rieles de alimentación (+/-)</li>
+            <li>No requiere soldadura</li>
+            <li>Reutilizable infinitamente</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sensor Ultrasónico -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <rect x="50" y="50" width="100" height="50" rx="5" fill="#006064" stroke="#00d4d8" stroke-width="2"/>
+          <circle cx="85" cy="75" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="1"/>
+          <circle cx="85" cy="75" r="8" fill="#2a2a2a" opacity="0.8"/>
+          <circle cx="115" cy="75" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="1"/>
+          <circle cx="115" cy="75" r="8" fill="#2a2a2a" opacity="0.8"/>
+          <rect x="60" y="105" width="3" height="15" fill="#ff6b1a"/>
+          <rect x="70" y="105" width="3" height="15" fill="#ffbe00"/>
+          <rect x="80" y="105" width="3" height="15" fill="#00d4d8"/>
+          <rect x="90" y="105" width="3" height="15" fill="#888"/>
+          <text x="61" y="135" font-family="monospace" font-size="5" fill="#ff6b1a">VCC</text>
+          <text x="69" y="135" font-family="monospace" font-size="5" fill="#ffbe00">TRIG</text>
+          <text x="78" y="135" font-family="monospace" font-size="5" fill="#00d4d8">ECHO</text>
+          <text x="89" y="135" font-family="monospace" font-size="5" fill="#888">GND</text>
+          <text x="100" y="30" text-anchor="middle" font-family="monospace" font-size="8" fill="#00d4d8" font-weight="bold">HC-SR04</text>
+          <path d="M 85 60 Q 70 50, 60 45" stroke="#00f5ff" stroke-width="1.5" fill="none" opacity="0.5">
+            <animate attributeName="opacity" values="0.2;0.7;0.2" dur="2s" repeatCount="indefinite"/>
+          </path>
+          <path d="M 115 60 Q 130 50, 140 45" stroke="#00f5ff" stroke-width="1.5" fill="none" opacity="0.5">
+            <animate attributeName="opacity" values="0.2;0.7;0.2" dur="2s" repeatCount="indefinite"/>
+          </path>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Sensor Ultrasónico</h3>
+        <p class="material-category">Sensor de Distancia</p>
+        <p class="material-description">
+          Mide distancias mediante ondas ultrasónicas. Emite pulsos de sonido y calcula la distancia según el tiempo de retorno del eco.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>Modelo común: HC-SR04</li>
+            <li>Rango: 2cm - 400cm</li>
+            <li>Precisión: ±3mm</li>
+            <li>Voltaje: 5V DC</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sensor de Temperatura -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="tempGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#ff6b1a;stop-opacity:0.8"/>
+              <stop offset="100%" style="stop-color:#0a4bff;stop-opacity:0.8"/>
+            </linearGradient>
+          </defs>
+          <rect x="85" y="30" width="30" height="70" rx="15" fill="url(#tempGrad)" stroke="#00d4d8" stroke-width="2"/>
+          <circle cx="100" cy="110" r="15" fill="#ff6b1a" stroke="#00d4d8" stroke-width="2"/>
+          <rect x="92" y="40" width="16" height="50" rx="8" fill="rgba(255,255,255,0.3)"/>
+          <rect x="95" y="45" width="10" height="40" rx="5" fill="#ff4e1a">
+            <animate attributeName="height" values="20;40;20" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="y" values="65;45;65" dur="3s" repeatCount="indefinite"/>
+          </rect>
+          <line x1="110" y1="50" x2="120" y2="50" stroke="#00d4d8" stroke-width="1"/>
+          <line x1="110" y1="65" x2="120" y2="65" stroke="#00d4d8" stroke-width="1"/>
+          <line x1="110" y1="80" x2="120" y2="80" stroke="#00d4d8" stroke-width="1"/>
+          <text x="125" y="52" font-family="monospace" font-size="6" fill="#ff6b1a">100°C</text>
+          <text x="125" y="67" font-family="monospace" font-size="6" fill="#ffbe00">50°C</text>
+          <text x="125" y="82" font-family="monospace" font-size="6" fill="#00d4d8">0°C</text>
+          <text x="100" y="145" text-anchor="middle" font-family="monospace" font-size="8" fill="#00d4d8" font-weight="bold">DHT11 / LM35</text>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Sensor de Temperatura</h3>
+        <p class="material-category">Sensor Ambiental</p>
+        <p class="material-description">
+          Dispositivo que mide la temperatura del ambiente. Los modelos DHT11/DHT22 también miden humedad. El LM35 es analógico y preciso.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>DHT11: 0-50°C, ±2°C</li>
+            <li>DHT22: -40-80°C, ±0.5°C</li>
+            <li>LM35: -55-150°C, salida analógica</li>
+            <li>Voltaje: 3.3V - 5V</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pulsador -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <rect x="60" y="60" width="80" height="40" rx="5" fill="#2a2a2a" stroke="#00d4d8" stroke-width="2"/>
+          <circle cx="100" cy="80" r="18" fill="#ff6b1a" stroke="#ff8c42" stroke-width="2"/>
+          <circle cx="100" cy="80" r="12" fill="#ff8c42" opacity="0.6"/>
+          <text x="100" y="85" text-anchor="middle" font-family="monospace" font-size="10" fill="#fff" font-weight="bold">PUSH</text>
+          <rect x="65" y="105" width="4" height="15" fill="#c0c0c0"/>
+          <rect x="85" y="105" width="4" height="15" fill="#c0c0c0"/>
+          <rect x="111" y="105" width="4" height="15" fill="#c0c0c0"/>
+          <rect x="131" y="105" width="4" height="15" fill="#c0c0c0"/>
+          <text x="67" y="135" font-family="monospace" font-size="6" fill="#00d4d8">1</text>
+          <text x="87" y="135" font-family="monospace" font-size="6" fill="#00d4d8">2</text>
+          <text x="113" y="135" font-family="monospace" font-size="6" fill="#00d4d8">3</text>
+          <text x="133" y="135" font-family="monospace" font-size="6" fill="#00d4d8">4</text>
+          <path d="M 100 55 L 100 40" stroke="#ffbe00" stroke-width="2" marker-end="url(#arrowDown)"/>
+          <text x="100" y="30" text-anchor="middle" font-family="monospace" font-size="7" fill="#ffbe00">Presionar</text>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Pulsador (Push Button)</h3>
+        <p class="material-category">Componente de Entrada</p>
+        <p class="material-description">
+          Interruptor momentáneo que cierra un circuito solo mientras se mantiene presionado. Esencial para interfaces de usuario.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>Tipos: N.O. (Normalmente Abierto)</li>
+            <li>4 pines (2 pares conectados)</li>
+            <li>Requiere resistencia pull-up/pull-down</li>
+            <li>Voltaje máximo: 12-50V</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motor DC -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="motorGrad">
+              <stop offset="0%" style="stop-color:#444;stop-opacity:1"/>
+              <stop offset="100%" style="stop-color:#222;stop-opacity:1"/>
+            </linearGradient>
+          </defs>
+          <rect x="50" y="50" width="100" height="60" rx="30" fill="url(#motorGrad)" stroke="#00d4d8" stroke-width="2"/>
+          <circle cx="100" cy="80" r="25" fill="#1a1a1a" stroke="#00d4d8" stroke-width="2"/>
+          <line x1="100" y1="55" x2="100" y2="105" stroke="#ff6b1a" stroke-width="3"/>
+          <line x1="75" y1="80" x2="125" y2="80" stroke="#ffbe00" stroke-width="3"/>
+          <circle cx="100" cy="80" r="5" fill="#00d4d8"/>
+          <rect x="148" y="75" width="30" height="10" rx="2" fill="#c0c0c0" stroke="#888" stroke-width="1"/>
+          <circle cx="178" cy="80" r="3" fill="#666"/>
+          <line x1="40" y1="65" x2="50" y2="65" stroke="#ff6b1a" stroke-width="3"/>
+          <line x1="40" y1="95" x2="50" y2="95" stroke="#000" stroke-width="3"/>
+          <text x="30" y="68" font-family="monospace" font-size="7" fill="#ff6b1a">+</text>
+          <text x="30" y="98" font-family="monospace" font-size="7" fill="#888">-</text>
+          <text x="100" y="135" text-anchor="middle" font-family="monospace" font-size="8" fill="#00d4d8" font-weight="bold">MOTOR DC</text>
+          <path d="M 165 70 Q 175 65, 185 70" stroke="#ffbe00" stroke-width="1.5" fill="none" opacity="0.6">
+            <animateTransform attributeName="transform" type="rotate" from="0 100 80" to="360 100 80" dur="2s" repeatCount="indefinite"/>
+          </path>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Motor DC</h3>
+        <p class="material-category">Actuador</p>
+        <p class="material-description">
+          Motor de corriente continua que convierte energía eléctrica en movimiento rotacional. Requiere driver (L298N) para control con Arduino.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>Voltaje: 3V - 12V típico</li>
+            <li>Control de velocidad con PWM</li>
+            <li>Requiere driver de motor</li>
+            <li>Aplicaciones: Robótica, ventiladores</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cables Jumper -->
+    <div class="material-card">
+      <div class="material-visual">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 30 70 Q 60 40, 100 70 Q 140 100, 170 70" stroke="#ff6b1a" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <circle cx="30" cy="70" r="6" fill="#ffbe00" stroke="#ff6b1a" stroke-width="2"/>
+          <circle cx="170" cy="70" r="6" fill="#ffbe00" stroke="#ff6b1a" stroke-width="2"/>
+          <path d="M 30 90 Q 60 60, 100 90 Q 140 120, 170 90" stroke="#00d4d8" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <circle cx="30" cy="90" r="6" fill="#00f5ff" stroke="#00d4d8" stroke-width="2"/>
+          <circle cx="170" cy="90" r="6" fill="#00f5ff" stroke="#00d4d8" stroke-width="2"/>
+          <path d="M 40 50 Q 70 30, 100 50 Q 130 70, 160 50" stroke="#888" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <circle cx="40" cy="50" r="6" fill="#c0c0c0" stroke="#888" stroke-width="2"/>
+          <circle cx="160" cy="50" r="6" fill="#c0c0c0" stroke="#888" stroke-width="2"/>
+          <text x="100" y="135" text-anchor="middle" font-family="monospace" font-size="8" fill="#00d4d8" font-weight="bold">JUMPER WIRES</text>
+          <text x="15" y="45" font-family="monospace" font-size="6" fill="#ff6b1a">M-M</text>
+          <text x="15" y="68" font-family="monospace" font-size="6" fill="#00d4d8">M-F</text>
+          <text x="15" y="88" font-family="monospace" font-size="6" fill="#ffbe00">F-F</text>
+        </svg>
+      </div>
+      <div class="material-content">
+        <h3 class="material-name">Cables Jumper</h3>
+        <p class="material-category">Conectores</p>
+        <p class="material-description">
+          Cables de conexión con terminales macho o hembra para conectar componentes en protoboards o directamente a Arduino.
+        </p>
+        <div class="material-specs">
+          <p class="spec-title">Especificaciones:</p>
+          <ul class="spec-list">
+            <li>Macho-Macho (M-M): Protoboard</li>
+            <li>Macho-Hembra (M-F): Arduino a módulos</li>
+            <li>Hembra-Hembra (F-F): Entre módulos</li>
+            <li>Longitud típica: 10-30cm</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /materials-grid -->
+
+</div><!-- /card-container -->
+
+<!-- Scripts -->
+<script>
+  /* Animated particles on canvas */
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['rgba(0,212,216,', 'rgba(255,107,26,', 'rgba(255,190,0,', 'rgba(0,245,255,'];
+
+  function mkParticle() {
+    const c = COLORS[Math.floor(Math.random() * COLORS.length)];
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + .4,
+      vx: (Math.random() - .5) * .4,
+      vy: (Math.random() - .5) * .4,
+      alpha: Math.random() * .6 + .2,
+      color: c,
+      pulse: Math.random() * Math.PI * 2
+    };
+  }
+  for (let i = 0; i < 90; i++) particles.push(mkParticle());
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach((p, i) => {
+      p.pulse += .02;
+      const a = p.alpha * (.7 + .3 * Math.sin(p.pulse));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + a + ')';
+      ctx.fill();
+
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+
+      /* Draw lines to nearby particles */
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dx = p.x - q.x, dy = p.y - q.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 90) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = p.color + ((.18 - dist/500) * a) + ')';
+          ctx.lineWidth = .5;
+          ctx.stroke();
+        }
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+
+</body>
+</html>
